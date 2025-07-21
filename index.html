@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="zh-cn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1.0">
+    <title>崔馨月 happy birthday</title>
+    <style>
+        html, body {
+            margin: 0;
+            padding: 0;
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+            background: #000;
+        }
+        canvas {
+            position: fixed;
+            left: 0; top: 0;
+            width: 100vw; height: 100vh;
+            z-index: 1;
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="rain"></canvas>
+    <script>
+    const canvas = document.getElementById('rain');
+    const ctx = canvas.getContext('2d');
+    function resize() {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+    }
+    resize();
+    window.addEventListener('resize', resize);
+
+    // 粉色弹幕雨参数
+    const rainText = "崔馨月 happy birthday";
+    function getFontSize() {
+        return Math.floor(window.innerWidth / 18) + 24;
+    }
+    const color = "#ff69b4";
+    const rainCount = 28; // 同屏弹幕数量
+    let rains = [];
+
+    function createRain() {
+        let fontSize = getFontSize();
+        let x = Math.random() * (canvas.width - fontSize * 6);
+        let y = -Math.random() * canvas.height;
+        let speed = 2.2 + Math.random() * 2.2;
+        rains.push({x, y, speed});
+    }
+
+    function drawRain(rain) {
+        let fontSize = getFontSize();
+        ctx.save();
+        ctx.font = `bold ${fontSize}px STLiti,FZShuTi,cursive,sans-serif`;
+        ctx.fillStyle = color;
+        ctx.shadowColor = "#fff0fa";
+        ctx.shadowBlur = 8;
+        ctx.globalAlpha = 0.85;
+        ctx.fillText(rainText, rain.x, rain.y);
+        ctx.restore();
+    }
+
+    function loop() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        // 保持雨滴数量
+        while (rains.length < rainCount) createRain();
+        for (let rain of rains) {
+            rain.y += rain.speed;
+            drawRain(rain);
+        }
+        // 移除出屏幕的
+        rains = rains.filter(rain => rain.y < canvas.height + getFontSize());
+        requestAnimationFrame(loop);
+    }
+    loop();
+    </script>
+</body>
+</html>
