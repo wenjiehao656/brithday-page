@@ -11,7 +11,7 @@
             width: 100vw;
             height: 100vh;
             overflow: hidden;
-            background: #000;
+            background: #fff;
         }
         canvas {
             position: fixed;
@@ -34,23 +34,23 @@
     resize();
     window.addEventListener('resize', resize);
 
-    // 粉色弹幕雨参数
+    // 公共参数
     const rainText = "崔馨月 happy birthday";
     function getFontSize() {
-        return Math.floor(window.innerWidth / 18) + 24;
+        return Math.floor(window.innerWidth / 10) + 12;
     }
     const color = "#ff69b4";
-    const rainCount = 28; // 同屏弹幕数量
-    let rains = [];
+    const rainCount = 48; // 每组弹幕数量
 
+    // 左侧正常弹幕
+    let rains = [];
     function createRain() {
         let fontSize = getFontSize();
-        let x = Math.random() * (canvas.width - fontSize * 6);
+        let x = Math.random() * (canvas.width - fontSize * rainText.length);
         let y = -Math.random() * canvas.height;
         let speed = 2.2 + Math.random() * 2.2;
         rains.push({x, y, speed});
     }
-
     function drawRain(rain) {
         let fontSize = getFontSize();
         ctx.save();
@@ -63,16 +63,51 @@
         ctx.restore();
     }
 
+    // 右侧反转弹幕
+    let rains2 = [];
+    function createRain2() {
+        let fontSize = getFontSize();
+        // 让整句文字都能完整显示在屏幕右侧
+        let x = canvas.width - (Math.random() * (canvas.width - fontSize * rainText.length));
+        let y = -Math.random() * canvas.height;
+        let speed = 2.2 + Math.random() * 2.2;
+        rains2.push({x, y, speed});
+    }
+    function drawRain2(rain) {
+        let fontSize = getFontSize();
+        ctx.save();
+        // 反转180度并靠右
+        ctx.translate(rain.x + fontSize * rainText.length / 2, rain.y + fontSize / 2);
+        ctx.rotate(Math.PI);
+        ctx.font = `bold ${fontSize}px STLiti,FZShuTi,cursive,sans-serif`;
+        ctx.fillStyle = color;
+        ctx.shadowColor = "#fff0fa";
+        ctx.shadowBlur = 8;
+        ctx.globalAlpha = 0.85;
+        ctx.textAlign = "left";
+        ctx.textBaseline = "top";
+        ctx.fillText(rainText, -fontSize * rainText.length / 2, -fontSize / 2);
+        ctx.restore();
+    }
+
     function loop() {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
-        // 保持雨滴数量
+        // 左侧正常弹幕
         while (rains.length < rainCount) createRain();
         for (let rain of rains) {
             rain.y += rain.speed;
             drawRain(rain);
         }
-        // 移除出屏幕的
         rains = rains.filter(rain => rain.y < canvas.height + getFontSize());
+
+        // 右侧反转弹幕
+        while (rains2.length < rainCount) createRain2();
+        for (let rain of rains2) {
+            rain.y += rain.speed;
+            drawRain2(rain);
+        }
+        rains2 = rains2.filter(rain => rain.y < canvas.height + getFontSize());
+
         requestAnimationFrame(loop);
     }
     loop();
