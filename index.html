@@ -41,7 +41,7 @@ function getFontSize() {
 const color = "#ff69b4";
 let fontSize = getFontSize();
 let rowCount = Math.floor(canvas.height / fontSize);
-const rainCount = 58; // 固定弹幕数为100
+const rainCount = 100; // 固定弹幕数为100
 
 let rains = [];
 let rains2 = [];
@@ -115,7 +115,7 @@ function loop() {
 
     // 10秒后开始准备停止弹幕
     const now = performance.now();
-    if (!stopStartTime && now - startTime > 20000) {
+    if (!stopStartTime && now - startTime > 10000) {
         stopStartTime = now;
     }
 
