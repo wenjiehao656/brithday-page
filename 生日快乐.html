@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="zh-cn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
+    <title>崔馨月 happy birthday</title>
+    <style>
+        html, body {
+            margin: 0;
+            padding: 0;
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+            background: #fff;
+        }
+        canvas {
+            position: fixed;
+            left: 0; top: 0;
+            width: 100vw; height: 100vh;
+            z-index: 1;
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+<canvas id="rain"></canvas>
+<img id="avatar" src="人头.jpg" alt="头像" style="width:120px;height:120px;border-radius:50%;object-fit:cover;position:fixed;left:16px;top:16px;z-index:2;transition:all 1.5s;">
+<audio id="music" src="生日快乐.mp3"></audio>
+<div id="wish" style="display:none;position:fixed;left:50%;top:42%;transform:translate(-50%,-50%);font-size:2rem;color:#ff69b4;font-weight:bold;z-index:3;text-shadow:0 2px 12px #fff0fa;">生日快乐</div>
+<div id="tap-tip" style="display:none;position:fixed;left:50%;top:80%;transform:translate(-50%,-50%);font-size:1.2rem;color:#333;font-weight:bold;z-index:3;">点击头像播放音乐</div>
+<script>
+const canvas = document.getElementById('rain');
+const ctx = canvas.getContext('2d');
+
+function resize() {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+}
+resize();
+window.addEventListener('resize', resize);
+
+// 参数
+const rainText = "崔馨月 happy birthday";
+function getFontSize() {
+    // 手机屏幕适中字体
+    return Math.max(Math.floor(window.innerWidth / 22), 16);
+}
+const color = "#ff69b4";
+const rainCount = 68; // 每侧弹幕数
+
+let rainsLeft = [];
+let rainsRight = [];
+
+function createRain(side) {
+    let fontSize = getFontSize();
+    let y = Math.random() * canvas.height;
+    let speed = 2.2 + Math.random() * 1.8; // 速度适中
+    let x;
+    if (side === "left") {
+        x = 8 + Math.random() * (canvas.width/2 - fontSize * rainText.length - 16);
+        rainsLeft.push({x, y, speed});
+    } else {
+        x = canvas.width/2 + Math.random() * (canvas.width/2 - fontSize * rainText.length - 16);
+        rainsRight.push({x, y, speed});
+    }
+}
+
+function drawRain(rain) {
+    let fontSize = getFontSize();
+    ctx.save();
+    ctx.font = `bold ${fontSize}px STLiti,FZShuTi,cursive,sans-serif`;
+    ctx.fillStyle = color;
+    ctx.shadowColor = "#ff69b4";
+    ctx.shadowBlur = 18;
+    ctx.globalAlpha = 0.92;
+    ctx.fillText(rainText, rain.x, rain.y);
+    // 额外虚影层
+    ctx.shadowColor = "#fff";
+    ctx.shadowBlur = 38;
+    ctx.globalAlpha = 0.22;
+    ctx.fillText(rainText, rain.x, rain.y);
+    ctx.restore();
+}
+
+function loop() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // 保持弹幕数量
+    while (rainsLeft.length < rainCount) createRain("left");
+    while (rainsRight.length < rainCount) createRain("right");
+
+    // 更新和绘制左侧弹幕
+    for (let rain of rainsLeft) {
+        rain.y += rain.speed;
+        if (rain.y > canvas.height) {
+            rain.y = -getFontSize();
+            rain.x = 8 + Math.random() * (canvas.width/2 - getFontSize() * rainText.length - 16);
+            rain.speed = 2.2 + Math.random() * 1.8;
+        }
+        drawRain(rain);
+    }
+    // 更新和绘制右侧弹幕
+    for (let rain of rainsRight) {
+        rain.y += rain.speed;
+        if (rain.y > canvas.height) {
+            rain.y = -getFontSize();
+            rain.x = canvas.width/2 + Math.random() * (canvas.width/2 - getFontSize() * rainText.length - 16);
+            rain.speed = 2.2 + Math.random() * 1.8;
+        }
+        drawRain(rain);
+    }
+
+    requestAnimationFrame(loop);
+}
+loop();
+
+// 头像动画
+const avatar = document.getElementById('avatar');
+const music = document.getElementById('music');
+const wish = document.getElementById('wish');
+const tapTip = document.getElementById('tap-tip');
+let avatarMoved = false;
+let avatarAngle = 0;
+let musicPlayed = false;
+let musicEnded = false;
+let canPlayMusic = false;
+
+// 5秒后显示提示
+setTimeout(() => {
+    avatar.style.left = `calc(50vw - 60px)`;
+    avatar.style.top = `calc(50vh - 60px)`;
+    avatar.style.width = "120px";
+    avatar.style.height = "120px";
+    avatar.style.opacity = "1";
+    avatar.style.transition = "all 1.5s";
+    tapTip.style.display = "block";
+    canPlayMusic = true;
+}, 5000);
+
+// 点击人脸后播放音乐并开始旋转
+avatar.addEventListener('click', () => {
+    if (canPlayMusic && !musicPlayed) {
+        tapTip.style.display = "none";
+        music.play();
+        musicPlayed = true;
+        avatarMoved = true;
+        animateAvatar();
+    }
+});
+avatar.addEventListener('touchstart', () => {
+    if (canPlayMusic && !musicPlayed) {
+        tapTip.style.display = "none";
+        music.play();
+        musicPlayed = true;
+        avatarMoved = true;
+        animateAvatar();
+    }
+});
+
+// 头像旋转动画
+function animateAvatar() {
+    if (avatarMoved && !musicEnded) {
+        avatarAngle += 0.5;
+        avatar.style.transform = `rotate(${avatarAngle}deg)`;
+        requestAnimationFrame(animateAvatar);
+    }
+}
+
+// 音乐播放结束后暂停旋转并显示祝福字样
+music.addEventListener('ended', () => {
+    musicEnded = true;
+    avatar.style.transform = "rotate(0deg)";
+    wish.style.display = "block";
+});
+
+setTimeout(() => {
+    avatar.style.opacity = "0.2";
+    setTimeout(() => {
+        avatar.style.opacity = "1";
+        animateAvatar();
+    }, 800);
+}, 5000);
+</script>
+</body>
+</html>
