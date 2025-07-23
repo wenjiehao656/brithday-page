@@ -2,7 +2,7 @@
 <html lang="zh-cn">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width,initial-scale=1.0">
+    <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
     <title>崔馨月 happy birthday</title>
     <style>
         html, body {
@@ -24,9 +24,14 @@
 </head>
 <body>
 <canvas id="rain"></canvas>
+<img id="avatar" src="人头.jpg" alt="头像" style="width:120px;height:120px;border-radius:50%;object-fit:cover;position:fixed;left:16px;top:16px;z-index:2;transition:all 1.5s;">
+<audio id="music" src="生日快乐.mp3"></audio>
+<div id="wish" style="display:none;position:fixed;left:50%;top:42%;transform:translate(-50%,-50%);font-size:2rem;color:#ff69b4;font-weight:bold;z-index:3;text-shadow:0 2px 12px #fff0fa;">生日快乐</div>
+<div id="tap-tip" style="display:none;position:fixed;left:50%;top:80%;transform:translate(-50%,-50%);font-size:1.2rem;color:#333;font-weight:bold;z-index:3;">点击头像播放音乐</div>
 <script>
 const canvas = document.getElementById('rain');
 const ctx = canvas.getContext('2d');
+
 function resize() {
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
@@ -34,167 +39,147 @@ function resize() {
 resize();
 window.addEventListener('resize', resize);
 
+// 参数
 const rainText = "崔馨月 happy birthday";
 function getFontSize() {
-    return Math.floor(window.innerWidth / 12) + 10;
+    // 手机屏幕适中字体
+    return Math.max(Math.floor(window.innerWidth / 22), 16);
 }
 const color = "#ff69b4";
-let fontSize = getFontSize();
-let rowCount = Math.floor(canvas.height / fontSize);
-const rainCount = 100; // 固定弹幕数为100
+const rainCount = 68; // 每侧弹幕数
 
-let rains = [];
-let rains2 = [];
-let stoppedRows = [];
-let stoppedRows2 = [];
-let stopStartTime = null;
-let stoppedCount = 0;
-let allStopped = false;
+let rainsLeft = [];
+let rainsRight = [];
 
-// 初始化弹幕，数量为100
-function initRains() {
-    fontSize = getFontSize();
-    rowCount = rainCount;
-    rains = [];
-    rains2 = [];
-    stoppedRows = [];
-    stoppedRows2 = [];
-    stoppedCount = 0;
-    allStopped = false;
-    for (let i = 0; i < rainCount; i++) {
-        let x = 10 + Math.random() * (canvas.width/2 - fontSize * rainText.length - 20);
-        let y = -Math.random() * canvas.height;
-        let speed = 10 + Math.random() * 8;
-        rains.push({x, y, speed, stopped: false, row: i});
-        // 右侧反转
-        let x2 = canvas.width/2 + Math.random() * (canvas.width/2 - fontSize * rainText.length - 20);
-        let y2 = -Math.random() * canvas.height;
-        let speed2 = 10 + Math.random() * 8;
-        rains2.push({x: x2, y: y2, speed: speed2, stopped: false, row: i});
+function createRain(side) {
+    let fontSize = getFontSize();
+    let y = Math.random() * canvas.height;
+    let speed = 2.2 + Math.random() * 1.8; // 速度适中
+    let x;
+    if (side === "left") {
+        x = 8 + Math.random() * (canvas.width/2 - fontSize * rainText.length - 16);
+        rainsLeft.push({x, y, speed});
+    } else {
+        x = canvas.width/2 + Math.random() * (canvas.width/2 - fontSize * rainText.length - 16);
+        rainsRight.push({x, y, speed});
     }
 }
-initRains();
-window.addEventListener('resize', initRains);
 
 function drawRain(rain) {
+    let fontSize = getFontSize();
     ctx.save();
     ctx.font = `bold ${fontSize}px STLiti,FZShuTi,cursive,sans-serif`;
     ctx.fillStyle = color;
     ctx.shadowColor = "#ff69b4";
-    ctx.shadowBlur = 24; // 更强虚影
+    ctx.shadowBlur = 18;
     ctx.globalAlpha = 0.92;
     ctx.fillText(rainText, rain.x, rain.y);
     // 额外虚影层
     ctx.shadowColor = "#fff";
-    ctx.shadowBlur = 60;
-    ctx.globalAlpha = 0.25;
+    ctx.shadowBlur = 38;
+    ctx.globalAlpha = 0.22;
     ctx.fillText(rainText, rain.x, rain.y);
     ctx.restore();
 }
-function drawRain2(rain) {
-    ctx.save();
-    ctx.font = `bold ${fontSize}px STLiti,FZShuTi,cursive,sans-serif`;
-    ctx.fillStyle = color;
-    ctx.shadowColor = "#ff69b4";
-    ctx.shadowBlur = 24;
-    ctx.globalAlpha = 0.92;
-    ctx.fillText(rainText, rain.x, rain.y);
-    // 额外虚影层
-    ctx.shadowColor = "#fff";
-    ctx.shadowBlur = 60;
-    ctx.globalAlpha = 0.25;
-    ctx.fillText(rainText, rain.x, rain.y);
-    ctx.restore();
-}
-
-// 记录动画开始时间
-const startTime = performance.now();
 
 function loop() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    // 10秒后开始准备停止弹幕
-    const now = performance.now();
-    if (!stopStartTime && now - startTime > 10000) {
-        stopStartTime = now;
-    }
+    // 保持弹幕数量
+    while (rainsLeft.length < rainCount) createRain("left");
+    while (rainsRight.length < rainCount) createRain("right");
 
-    // 控制每行弹幕停止
-    if (stopStartTime && stoppedCount < rowCount) {
-        // 每0.5秒停止一行
-        if (now - stopStartTime > stoppedCount * 500) {
-            // 找到该行的弹幕（左、右）
-            let idx = rowCount - 1 - stoppedCount; // 从底部开始
-            let rain = rains[idx];
-            let rain2 = rains2[idx];
-            if (rain && !rain.stopped) {
-                rain.stopped = true;
-                stoppedRows.push({x: rain.x, y: rain.y});
-            }
-            if (rain2 && !rain2.stopped) {
-                rain2.stopped = true;
-                stoppedRows2.push({x: rain2.x, y: rain2.y});
-            }
-            stoppedCount++;
-            // 全部停止后标记
-            if (stoppedCount >= rowCount) {
-                allStopped = true;
-            }
-        }
-    }
-
-    // 更新和绘制弹幕
-    for (let i = 0; i < rains.length; i++) {
-        let rain = rains[i];
-        if (!rain.stopped) {
-            rain.y += rain.speed;
-            // 到达底部也停止
-            if (rain.y > canvas.height - fontSize) {
-                rain.y = canvas.height - fontSize;
-                rain.stopped = true;
-                stoppedRows.push({x: rain.x, y: rain.y});
-            }
+    // 更新和绘制左侧弹幕
+    for (let rain of rainsLeft) {
+        rain.y += rain.speed;
+        if (rain.y > canvas.height) {
+            rain.y = -getFontSize();
+            rain.x = 8 + Math.random() * (canvas.width/2 - getFontSize() * rainText.length - 16);
+            rain.speed = 2.2 + Math.random() * 1.8;
         }
         drawRain(rain);
     }
-    for (let i = 0; i < rains2.length; i++) {
-        let rain = rains2[i];
-        if (!rain.stopped) {
-            rain.y += rain.speed;
-            if (rain.y > canvas.height - fontSize) {
-                rain.y = canvas.height - fontSize;
-                rain.stopped = true;
-                stoppedRows2.push({x: rain.x, y: rain.y});
-            }
+    // 更新和绘制右侧弹幕
+    for (let rain of rainsRight) {
+        rain.y += rain.speed;
+        if (rain.y > canvas.height) {
+            rain.y = -getFontSize();
+            rain.x = canvas.width/2 + Math.random() * (canvas.width/2 - getFontSize() * rainText.length - 16);
+            rain.speed = 2.2 + Math.random() * 1.8;
         }
-        drawRain2(rain);
-    }
-
-    // 静止后补齐铺满
-    if (allStopped) {
-        // 补齐所有未静止的行
-        for (let i = 0; i < rowCount; i++) {
-            if (!stoppedRows[i]) {
-                let x = 10 + Math.random() * (canvas.width/2 - fontSize * rainText.length - 20);
-                let y = i * fontSize;
-                stoppedRows[i] = {x, y};
-            }
-            if (!stoppedRows2[i]) {
-                let x2 = canvas.width/2 + Math.random() * (canvas.width/2 - fontSize * rainText.length - 20);
-                let y2 = i * fontSize;
-                stoppedRows2[i] = {x: x2, y: y2};
-            }
-        }
-        // 绘制静止弹幕铺满
-        for (let i = 0; i < rowCount; i++) {
-            drawRain({x: stoppedRows[i].x, y: i * fontSize});
-            drawRain2({x: stoppedRows2[i].x, y: i * fontSize});
-        }
+        drawRain(rain);
     }
 
     requestAnimationFrame(loop);
 }
 loop();
+
+// 头像动画
+const avatar = document.getElementById('avatar');
+const music = document.getElementById('music');
+const wish = document.getElementById('wish');
+const tapTip = document.getElementById('tap-tip');
+let avatarMoved = false;
+let avatarAngle = 0;
+let musicPlayed = false;
+let musicEnded = false;
+let canPlayMusic = false;
+
+// 5秒后显示提示
+setTimeout(() => {
+    avatar.style.left = `calc(50vw - 60px)`;
+    avatar.style.top = `calc(50vh - 60px)`;
+    avatar.style.width = "120px";
+    avatar.style.height = "120px";
+    avatar.style.opacity = "1";
+    avatar.style.transition = "all 1.5s";
+    tapTip.style.display = "block";
+    canPlayMusic = true;
+}, 5000);
+
+// 点击人脸后播放音乐并开始旋转
+avatar.addEventListener('click', () => {
+    if (canPlayMusic && !musicPlayed) {
+        tapTip.style.display = "none";
+        music.play();
+        musicPlayed = true;
+        avatarMoved = true;
+        animateAvatar();
+    }
+});
+avatar.addEventListener('touchstart', () => {
+    if (canPlayMusic && !musicPlayed) {
+        tapTip.style.display = "none";
+        music.play();
+        musicPlayed = true;
+        avatarMoved = true;
+        animateAvatar();
+    }
+});
+
+// 头像旋转动画
+function animateAvatar() {
+    if (avatarMoved && !musicEnded) {
+        avatarAngle += 0.5;
+        avatar.style.transform = `rotate(${avatarAngle}deg)`;
+        requestAnimationFrame(animateAvatar);
+    }
+}
+
+// 音乐播放结束后暂停旋转并显示祝福字样
+music.addEventListener('ended', () => {
+    musicEnded = true;
+    avatar.style.transform = "rotate(0deg)";
+    wish.style.display = "block";
+});
+
+setTimeout(() => {
+    avatar.style.opacity = "0.2";
+    setTimeout(() => {
+        avatar.style.opacity = "1";
+        animateAvatar();
+    }, 800);
+}, 5000);
 </script>
 </body>
 </html>
